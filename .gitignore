@@ -1,0 +1,13 @@
+*.pyc
+*.pyo
+*.log
+*.pets
+*.yaml
+*.db
+*.jpg
+*.dat
+*.buildings
+resources/*
+news/cache_index.txt
+useropt
+backups/gardens/garden_100000001.json
