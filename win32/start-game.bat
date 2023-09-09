@@ -1,7 +1,9 @@
 @echo off
+title Toontown Online - Game Client
 cd ..
 
-:main
-C:/Panda3D-1.11.0-x64/python/python.exe -m main
+set /P PPYTHON_PATH=<PPYTHON_PATH
+
+%PPYTHON_PATH% -m main
 pause
 goto :main
