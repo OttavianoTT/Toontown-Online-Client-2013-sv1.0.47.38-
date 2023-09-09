@@ -3,7 +3,6 @@
 *.log
 *.pets
 *.yaml
-*.dat
 *.buildings
 news/cache_index.txt
 useropt
