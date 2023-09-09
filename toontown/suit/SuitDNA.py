@@ -1,88 +1,92 @@
 import random
-from pandac.PandaModules import *
+from panda3d.core import *
 from direct.directnotify.DirectNotifyGlobal import *
 from toontown.toonbase import TTLocalizer
 import random
 from direct.distributed.PyDatagram import PyDatagram
 from direct.distributed.PyDatagramIterator import PyDatagramIterator
 from otp.avatar import AvatarDNA
+from SuitLocalizerEnglish import *
 notify = directNotify.newCategory('SuitDNA')
-suitHeadTypes = ['f',
- 'p',
- 'ym',
- 'mm',
- 'ds',
- 'hh',
- 'cr',
- 'tbc',
- 'bf',
- 'b',
- 'dt',
- 'ac',
- 'bs',
- 'sd',
- 'le',
- 'bw',
- 'sc',
- 'pp',
- 'tw',
- 'bc',
- 'nc',
- 'mb',
- 'ls',
- 'rb',
- 'cc',
- 'tm',
- 'nd',
- 'gh',
- 'ms',
- 'tf',
- 'm',
- 'mh']
-suitATypes = ['ym',
- 'hh',
- 'tbc',
- 'dt',
- 'bs',
- 'le',
- 'bw',
- 'pp',
- 'nc',
- 'rb',
- 'nd',
- 'tf',
- 'm',
- 'mh']
-suitBTypes = ['p',
- 'ds',
- 'b',
- 'ac',
- 'sd',
- 'bc',
- 'ls',
- 'tm',
- 'ms']
-suitCTypes = ['f',
- 'mm',
- 'cr',
- 'bf',
- 'sc',
- 'tw',
- 'mb',
- 'cc',
- 'gh']
-suitDepts = ['c',
- 'l',
- 'm',
- 's']
-suitDeptFullnames = {'c': TTLocalizer.Bossbot,
- 'l': TTLocalizer.Lawbot,
- 'm': TTLocalizer.Cashbot,
- 's': TTLocalizer.Sellbot}
-suitDeptFullnamesP = {'c': TTLocalizer.BossbotP,
- 'l': TTLocalizer.LawbotP,
- 'm': TTLocalizer.CashbotP,
- 's': TTLocalizer.SellbotP}
+suitHeadTypes = [FLUNKY,
+    PENCIL_PUSHER,
+    YESMAN,
+    MICROMANAGER,
+    DOWNSIZER,
+    HEAD_HUNTER,
+    CORPORATE_RAIDER,
+    THE_BIG_CHEESE,
+    #LAWBOT_STRINGS
+    BOTTOM_FEEDER,
+    BLOODSUCKER,
+    DOUBLE_TALKER,
+    AMBULANCE_CHASER,
+    BACK_STABBER,
+    SPIN_DOCTOR,
+    LEGAL_EAGLE,
+    BIG_WIG,
+    #CASHBOT_STRINGS
+    SHORT_CHANGE,
+    PENNY_PINCHER,
+    TIGHTWAD,
+    BEAN_COUNTER,
+    NUMBER_CRUNCHER,
+    MONEY_BAGS,
+    LOAN_SHARK,
+    ROBBER_BARON,
+    #SELLBOT_STRINGS
+    COLD_CALLER,
+    TELEMARKETER,
+    NAME_DROPPER,
+    GLAD_HANDER,
+    MOVER_AND_SHAKER,
+    TWO_FACE,
+    THE_MINGLER,
+    MR_HOLLYWOOD]
+suitATypes = [YESMAN,
+ HEAD_HUNTER,
+ THE_BIG_CHEESE,
+ DOUBLE_TALKER,
+ BACK_STABBER,
+ LEGAL_EAGLE,
+ BIG_WIG,
+ PENNY_PINCHER,
+ NUMBER_CRUNCHER,
+ ROBBER_BARON,
+ NAME_DROPPER,
+ TWO_FACE,
+ THE_MINGLER,
+ MR_HOLLYWOOD]
+suitBTypes = [PENCIL_PUSHER,
+ DOWNSIZER,
+ BLOODSUCKER,
+ AMBULANCE_CHASER,
+ SPIN_DOCTOR,
+ BEAN_COUNTER,
+ LOAN_SHARK,
+ TELEMARKETER,
+ MOVER_AND_SHAKER]
+suitCTypes = [FLUNKY,
+ MICROMANAGER,
+ CORPORATE_RAIDER,
+ BOTTOM_FEEDER,
+ SHORT_CHANGE,
+ TIGHTWAD,
+ MONEY_BAGS,
+ COLD_CALLER,
+ GLAD_HANDER]
+suitDepts = [BOSSBOT,
+ LAWBOT,
+ CASHBOT,
+ SELLBOT]
+suitDeptFullnames = {BOSSBOT: TTLocalizer.Bossbot,
+ LAWBOT: TTLocalizer.Lawbot,
+ CASHBOT: TTLocalizer.Cashbot,
+ SELLBOT: TTLocalizer.Sellbot}
+suitDeptFullnamesP = {BOSSBOT: TTLocalizer.BossbotP,
+ LAWBOT: TTLocalizer.LawbotP,
+ CASHBOT: TTLocalizer.CashbotP,
+ SELLBOT: TTLocalizer.SellbotP}
 corpPolyColor = VBase4(0.95, 0.75, 0.75, 1.0)
 legalPolyColor = VBase4(0.75, 0.75, 0.95, 1.0)
 moneyPolyColor = VBase4(0.65, 0.95, 0.85, 1.0)
@@ -98,6 +102,54 @@ suitsPerLevel = [1,
 suitsPerDept = 8
 goonTypes = ['pg', 'sg']
 
+suitTierDict = {
+    SELLBOT: [
+        [COLD_CALLER, HOT_CALLER],
+        [TELEMARKETER],
+        [NAME_DROPPER],
+        [GLAD_HANDER],
+        [MOVER_AND_SHAKER],
+        [TWO_FACE],
+        [THE_MINGLER],
+        [MR_HOLLYWOOD]
+    ],
+    CASHBOT: [
+        [SHORT_CHANGE],
+        [PENNY_PINCHER],
+        [TIGHTWAD],
+        [BEAN_COUNTER],
+        [NUMBER_CRUNCHER],
+        [MONEY_BAGS],
+        [LOAN_SHARK],
+        [ROBBER_BARON]
+    ],
+    LAWBOT: [
+      [BOTTOM_FEEDER],
+      [BLOODSUCKER],
+      [DOUBLE_TALKER],
+      [AMBULANCE_CHASER],
+      [BACK_STABBER],
+      [SPIN_DOCTOR],
+      [LEGAL_EAGLE],
+      [BIG_WIG] 
+    ],
+    BOSSBOT: [
+        [FLUNKY],
+        [PENCIL_PUSHER],
+        [YESMAN],
+        [MICROMANAGER],
+        [DOWNSIZER],
+        [HEAD_HUNTER],
+        [CORPORATE_RAIDER],
+        [THE_BIG_CHEESE]
+    ]
+}
+
+sellbots = ['cc', 'hc', 'tm', 'nd', 'gh', 'ms', 'tf', 'm', 'mh']
+cashbots = ['sc', 'pp', 'tw', 'bc', 'nc', 'mb', 'ls', 'rb']
+lawbots = ['bf', 'b', 'dt', 'ac', 'bs', 'sd', 'le', 'bw']
+bossbots = ['f', 'p', 'ym', 'mm', 'ds', 'hh', 'cr', 'tbc']
+
 def getSuitBodyType(name):
     if name in suitATypes:
         return 'a'
@@ -111,13 +163,13 @@ def getSuitBodyType(name):
 
 def getSuitDept(name):
     index = suitHeadTypes.index(name)
-    if index < suitsPerDept:
+    if name in bossbots:
         return suitDepts[0]
-    elif index < suitsPerDept * 2:
+    elif name in lawbots:
         return suitDepts[1]
-    elif index < suitsPerDept * 3:
+    elif name in cashbots:
         return suitDepts[2]
-    elif index < suitsPerDept * 4:
+    elif name in sellbots:
         return suitDepts[3]
     else:
         print 'Unknown dept for suit name: ', name
@@ -208,7 +260,7 @@ class SuitDNA(AvatarDNA.AvatarDNA):
 
     def __defaultSuit(self):
         self.type = 's'
-        self.name = 'ds'
+        self.name = DOWNSIZER
         self.dept = getSuitDept(self.name)
         self.body = getSuitBodyType(self.name)
 
@@ -229,22 +281,16 @@ class SuitDNA(AvatarDNA.AvatarDNA):
     def newSuitRandom(self, level = None, dept = None):
         self.type = 's'
         if level == None:
-            level = random.choice(range(1, len(suitsPerLevel)))
+            level = random.choice(xrange(1, len(suitsPerLevel)))
         elif level < 0 or level > len(suitsPerLevel):
             notify.error('Invalid suit level: %d' % level)
         if dept == None:
             dept = random.choice(suitDepts)
         self.dept = dept
         index = suitDepts.index(dept)
-        base = index * suitsPerDept
-        offset = 0
-        if level > 1:
-            for i in range(1, level):
-                offset = offset + suitsPerLevel[i - 1]
-
-        bottom = base + offset
-        top = bottom + suitsPerLevel[level - 1]
-        self.name = suitHeadTypes[random.choice(range(bottom, top))]
+        
+        
+        self.name = random.choice(suitTierDict[dept][level-1])
         self.body = getSuitBodyType(self.name)
         return
 

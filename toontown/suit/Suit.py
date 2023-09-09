@@ -618,13 +618,7 @@ class Suit(Avatar.Avatar):
     def generateBody(self):
         animDict = self.generateAnimDict()
         filePrefix, bodyPhase = ModelDict[self.style.body]
-        if base.config.GetBool('want-new-cogs', 0):
-            if cogExists(filePrefix + 'zero.bam'):
-                self.loadModel('phase_3.5' + filePrefix + 'zero')
-            else:
-                self.loadModel('phase_3.5' + filePrefix + 'mod')
-        else:
-            self.loadModel('phase_3.5' + filePrefix + 'mod')
+        self.loadModel('phase_3.5' + filePrefix + 'mod' + '.egg')
         self.loadAnims(animDict)
         self.setSuitClothes()
 
@@ -696,10 +690,10 @@ class Suit(Avatar.Avatar):
             modelRoot.find('**/arms').setTexture(armTex, 1)
             modelRoot.find('**/legs').setTexture(legTex, 1)
             modelRoot.find('**/hands').setColor(self.handColor)
-            self.leftHand = self.find('**/joint_Lhold')
-            self.rightHand = self.find('**/joint_Rhold')
-            self.shadowJoint = self.find('**/joint_shadow')
-            self.nametagJoint = self.find('**/joint_nameTag')
+            self.leftHand = self.exposeJoint(None, "modelRoot", "joint_Lhold")
+            self.rightHand = self.exposeJoint(None, "modelRoot", "joint_Rhold")
+            self.shadowJoint = self.exposeJoint(None, "modelRoot", "joint_shadow")
+            self.nametagNull = self.exposeJoint(None, "modelRoot", "joint_nameTag")
 
         if base.config.GetBool('want-new-cogs', 0):
             if dept == 'c':
@@ -764,22 +758,17 @@ class Suit(Avatar.Avatar):
         else:
             filePrefix, phase = ModelDict[self.style.body]
         headModel = loader.loadModel('phase_' + str(phase) + filePrefix + 'heads')
-        headReferences = headModel.findAllMatches('**/' + headType)
-        for i in range(0, headReferences.getNumPaths()):
-            if base.config.GetBool('want-new-cogs', 0):
-                headPart = self.instance(headReferences.getPath(i), 'modelRoot', 'to_head')
-                if not headPart:
-                    headPart = self.instance(headReferences.getPath(i), 'modelRoot', 'joint_head')
-            else:
-                headPart = self.instance(headReferences.getPath(i), 'modelRoot', 'joint_head')
-            if self.headTexture:
-                headTex = loader.loadTexture('phase_' + str(phase) + '/maps/' + self.headTexture)
-                headTex.setMinfilter(Texture.FTLinearMipmapLinear)
-                headTex.setMagfilter(Texture.FTLinear)
-                headPart.setTexture(headTex, 1)
-            if self.headColor:
-                headPart.setColor(self.headColor)
-            self.headParts.append(headPart)
+        headPart = headModel.find('**/' + headType)
+        headJointer = self.exposeJoint(None, "modelRoot", "joint_head")
+        headPart.reparentTo(headJointer)
+        if self.headTexture:
+            headTex = loader.loadTexture('phase_' + str(phase) + '/maps/' + self.headTexture)
+            headTex.setMinfilter(Texture.FTLinearMipmapLinear)
+            headTex.setMagfilter(Texture.FTLinear)
+            headPart.setTexture(headTex, 1)
+        if self.headColor:
+            headPart.setColor(self.headColor)
+        self.headParts.append(headPart)
 
         headModel.removeNode()
 
@@ -806,12 +795,7 @@ class Suit(Avatar.Avatar):
     def generateCorporateMedallion(self):
         icons = loader.loadModel('phase_3/models/gui/cog_icons')
         dept = self.style.dept
-        if base.config.GetBool('want-new-cogs', 0):
-            chestNull = self.find('**/def_joint_attachMeter')
-            if chestNull.isEmpty():
-                chestNull = self.find('**/joint_attachMeter')
-        else:
-            chestNull = self.find('**/joint_attachMeter')
+        chestNull = self.exposeJoint(None, "modelRoot", "joint_attachMeter")
         if dept == 'c':
             self.corpMedallion = icons.find('**/CorpIcon').copyTo(chestNull)
         elif dept == 's':
@@ -831,12 +815,7 @@ class Suit(Avatar.Avatar):
         button.setScale(3.0)
         button.setH(180.0)
         button.setColor(self.healthColors[0])
-        if base.config.GetBool('want-new-cogs', 0):
-            chestNull = self.find('**/def_joint_attachMeter')
-            if chestNull.isEmpty():
-                chestNull = self.find('**/joint_attachMeter')
-        else:
-            chestNull = self.find('**/joint_attachMeter')
+        chestNull = self.exposeJoint(None, "modelRoot", "joint_attachMeter")
         button.reparentTo(chestNull)
         self.healthBar = button
         glow = BattleProps.globalPropPool.getProp('glow')
@@ -975,10 +954,10 @@ class Suit(Avatar.Avatar):
          'dept': self.getStyleDept(),
          'level': self.getActualLevel()}
         self.setDisplayName(nameInfo)
-        self.leftHand = self.find('**/joint_Lhold')
-        self.rightHand = self.find('**/joint_Rhold')
-        self.shadowJoint = self.find('**/joint_shadow')
-        self.nametagNull = self.find('**/joint_nameTag')
+        self.leftHand = self.exposeJoint(None, "modelRoot", "joint_Lhold")
+        self.rightHand = self.exposeJoint(None, "modelRoot", "joint_Rhold")
+        self.shadowJoint = self.exposeJoint(None, "modelRoot", "joint_shadow")
+        self.nametagNull = self.exposeJoint(None, "modelRoot", "joint_nameTag")
         if not dropShadow.isEmpty():
             dropShadow.setScale(0.75)
             if not self.shadowJoint.isEmpty():
