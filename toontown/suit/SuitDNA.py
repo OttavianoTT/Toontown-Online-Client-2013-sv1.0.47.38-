@@ -149,6 +149,7 @@ sellbots = ['cc', 'hc', 'tm', 'nd', 'gh', 'ms', 'tf', 'm', 'mh']
 cashbots = ['sc', 'pp', 'tw', 'bc', 'nc', 'mb', 'ls', 'rb']
 lawbots = ['bf', 'b', 'dt', 'ac', 'bs', 'sd', 'le', 'bw']
 bossbots = ['f', 'p', 'ym', 'mm', 'ds', 'hh', 'cr', 'tbc']
+normalSuits = 8
 
 def getSuitBodyType(name):
     if name in suitATypes:

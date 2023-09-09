@@ -1,14 +1,20 @@
-import ShtikerPage
-from direct.task.Task import Task
-import SummonCogDialog
+import random
+from panda3d.core import *
+from direct.directnotify import DirectNotifyGlobal
 from direct.gui.DirectGui import *
-from pandac.PandaModules import *
+from direct.interval.IntervalGlobal import *
+from direct.task.Task import Task
+from otp.nametag.ChatBalloon import ChatBalloon
+from otp.otpbase import OTPLocalizer
+from toontown.battle import SuitBattleGlobals
+from toontown.battle import BattleProps
+from toontown.suit import Suit
+from toontown.suit import SuitDNA
 from toontown.toonbase import ToontownGlobals
 from toontown.toonbase import TTLocalizer
-from toontown.suit import SuitDNA
-from toontown.suit import Suit
-from toontown.battle import SuitBattleGlobals
 from CogPageGlobals import *
+import ShtikerPage
+import SummonCogDialog
 SCALE_FACTOR = 1.5
 RADAR_DELAY = 0.2
 BUILDING_RADAR_POS = (0.375,
@@ -27,537 +33,526 @@ PANEL_COLORS_COMPLETE2 = (Vec4(0.9, 0.725, 0.32, 1),
  Vec4(0.825, 0.725, 0.45, 1),
  Vec4(0.8, 0.75, 0.325, 1),
  Vec4(0.875, 0.675, 0.35, 1))
-SHADOW_SCALE_POS = ((1.225,
-  0,
-  10,
-  -0.03),
- (0.9,
-  0,
-  10,
-  0),
- (1.125,
-  0,
-  10,
-  -0.015),
- (1.0,
-  0,
-  10,
-  -0.02),
- (1.0,
-  -0.02,
-  10,
-  -0.01),
- (1.05,
-  0,
-  10,
-  -0.0425),
- (1.0,
-  0,
-  10,
-  -0.05),
- (0.9,
-  -0.0225,
-  10,
-  -0.025),
- (1.25,
-  0,
-  10,
-  -0.03),
- (1.0,
-  0,
-  10,
-  -0.01),
- (1.0,
-  0.005,
-  10,
-  -0.01),
- (1.0,
-  0,
-  10,
-  -0.01),
- (0.9,
-  0.005,
-  10,
-  -0.01),
- (0.95,
-  0,
-  10,
-  -0.01),
- (1.125,
-  0.005,
-  10,
-  -0.035),
- (0.85,
-  -0.005,
-  10,
-  -0.035),
- (1.2,
-  0,
-  10,
-  -0.01),
- (1.05,
-  0,
-  10,
-  0),
- (1.1,
-  0,
-  10,
-  -0.04),
- (1.0,
-  0,
-  10,
-  0),
- (0.95,
-  0.0175,
-  10,
-  -0.015),
- (1.0,
-  0,
-  10,
-  -0.06),
- (0.95,
-  0.02,
-  10,
-  -0.0175),
- (0.9,
-  0,
-  10,
-  -0.03),
- (1.15,
-  0,
-  10,
-  -0.01),
- (1.0,
-  0,
-  10,
-  0),
- (1.0,
-  0,
-  10,
-  0),
- (1.1,
-  0,
-  10,
-  -0.04),
- (0.93,
-  0.005,
-  10,
-  -0.01),
- (0.95,
-  0.005,
-  10,
-  -0.01),
- (1.0,
-  0,
-  10,
-  -0.02),
- (0.9,
-  0.0025,
-  10,
-  -0.03))
+
+PREVIOUS_SUIT_POS = -0.7
+NEXT_SUIT_POS = 0.7
+SUIT_Z = -0.6
+ACT_DELAY_MIN = 8.0
+ACT_DELAY_MAX = 15.0
+SUIT_DIAL_DICT = {
+                  "murmur": 'phase_3.5/audio/dial/COG_VO_murmur.ogg',
+                  "statement": 'phase_3.5/audio/dial/COG_VO_statement.ogg',
+                  "question": 'phase_3.5/audio/dial/COG_VO_question.ogg',
+                  "grunt": 'phase_3.5/audio/dial/COG_VO_grunt.ogg',
+                 }
+SKEL_DIAL_DICT = {
+                  "murmur": 'phase_5/audio/sfx/Skel_COG_VO_murmur.ogg',
+                  "statement": 'phase_5/audio/sfx/Skel_COG_VO_statement.ogg',
+                  "question": 'phase_5/audio/sfx/Skel_COG_VO_question.ogg',
+                  "grunt": 'phase_5/audio/sfx/Skel_COG_VO_grunt.ogg',
+                 }
 
 class SuitPage(ShtikerPage.ShtikerPage):
-
+    notify = DirectNotifyGlobal.directNotify.newCategory('SuitPage')
     def __init__(self):
         ShtikerPage.ShtikerPage.__init__(self)
 
     def load(self):
         ShtikerPage.ShtikerPage.load(self)
-        frameModel = loader.loadModel('phase_3.5/models/gui/suitpage_frame')
-        frameModel.setScale(0.03375, 1, 0.045)
-        frameModel.setPos(0, 10, -0.575)
-        self.guiTop = NodePath('guiTop')
-        self.guiTop.reparentTo(self)
-        self.frameNode = NodePath('frameNode')
-        self.frameNode.reparentTo(self.guiTop)
-        self.panelNode = NodePath('panelNode')
-        self.panelNode.reparentTo(self.guiTop)
-        self.iconNode = NodePath('iconNode')
-        self.iconNode.reparentTo(self.guiTop)
-        self.enlargedPanelNode = NodePath('enlargedPanelNode')
-        self.enlargedPanelNode.reparentTo(self.guiTop)
-        frame = frameModel.find('**/frame')
-        frame.wrtReparentTo(self.frameNode)
-        screws = frameModel.find('**/screws')
-        screws.wrtReparentTo(self.iconNode)
-        icons = frameModel.find('**/icons')
-        del frameModel
-        self.title = DirectLabel(parent=self.iconNode, relief=None, text=TTLocalizer.SuitPageTitle, text_scale=0.1, text_pos=(0.04, 0), textMayChange=0)
+        self.title = DirectLabel(parent=self, relief=None, text=TTLocalizer.SuitPageTitle, text_scale=0.1, text_pos=(0.04, 0.625), textMayChange=0)
+        self.suitName = OnscreenText(parent=self, text='', scale=0.1, pos=(0.04, 0.5), font=ToontownGlobals.getSuitFont())
+        self.suitInfo = OnscreenText(parent=self, text='', scale=0.05, pos=(0.04, 0.4), font=ToontownGlobals.getSuitFont())
         self.radarButtons = []
-        icon = icons.find('**/corp_icon')
-        self.corpRadarButton = DirectButton(parent=self.iconNode, relief=None, state=DGG.DISABLED, image=icon, image_scale=(0.03375, 1, 0.045), image2_color=Vec4(1.0, 1.0, 1.0, 0.75), pos=(-0.2, 10, -0.575), command=self.toggleRadar, extraArgs=[0])
-        self.radarButtons.append(self.corpRadarButton)
-        icon = icons.find('**/legal_icon')
-        self.legalRadarButton = DirectButton(parent=self.iconNode, relief=None, state=DGG.DISABLED, image=icon, image_scale=(0.03375, 1, 0.045), image2_color=Vec4(1.0, 1.0, 1.0, 0.75), pos=(-0.2, 10, -0.575), command=self.toggleRadar, extraArgs=[1])
-        self.radarButtons.append(self.legalRadarButton)
-        icon = icons.find('**/money_icon')
-        self.moneyRadarButton = DirectButton(parent=self.iconNode, relief=None, state=DGG.DISABLED, image=(icon, icon, icon), image_scale=(0.03375, 1, 0.045), image2_color=Vec4(1.0, 1.0, 1.0, 0.75), pos=(-0.2, 10, -0.575), command=self.toggleRadar, extraArgs=[2])
-        self.radarButtons.append(self.moneyRadarButton)
-        icon = icons.find('**/sales_icon')
-        self.salesRadarButton = DirectButton(parent=self.iconNode, relief=None, state=DGG.DISABLED, image=(icon, icon, icon), image_scale=(0.03375, 1, 0.045), image2_color=Vec4(1.0, 1.0, 1.0, 0.75), pos=(-0.2, 10, -0.575), command=self.toggleRadar, extraArgs=[3])
-        self.radarButtons.append(self.salesRadarButton)
-        for radarButton in self.radarButtons:
-            radarButton.building = 0
-            radarButton.buildingRadarLabel = None
+        self.suitChatBalloon = None
+        self.suitChat = None
+        self.suitChatNP = None
+        self.suitSound = None
+        self.currentSuit = None
+        self.nextSuit = None
+        self.previousSuit = None
+        self.selectedSuit = 0
+        self.currentDept = 0
+        self.deptList = self.generateDeptList()
+        self.moveSeq = None
+        self.actSeq = None
 
-        gui = loader.loadModel('phase_3.5/models/gui/suitpage_gui')
-        self.panelModel = gui.find('**/card')
-        self.shadowModels = []
-        for index in range(1, len(SuitDNA.suitHeadTypes) + 1):
-            self.shadowModels.append(gui.find('**/shadow' + str(index)))
+        matGUI = loader.loadModel('phase_3/models/gui/tt_m_gui_mat_mainGui')
+        guiNextUp = matGUI.find('**/tt_t_gui_mat_nextUp')
+        guiNextDown = matGUI.find('**/tt_t_gui_mat_nextDown')
+        guiNextDisabled = matGUI.find('**/tt_t_gui_mat_nextDisabled')
+        self.guiNextButton = DirectButton(parent=self, relief=None, image=(guiNextUp,
+         guiNextDown,
+         guiNextUp,
+         guiNextDisabled), image_scale=(0.3, 0.3, 0.3), image1_scale=(0.35, 0.35, 0.35), image2_scale=(0.35, 0.35, 0.35), pos=(1.165, 0, -0.018), command=self.goForwards, text=('',
+         TTLocalizer.MakeAToonNext,
+         TTLocalizer.MakeAToonNext,
+         ''), text_font=ToontownGlobals.getSuitFont(), text_scale=TTLocalizer.MATguiNextButton, text_pos=(0, 0.115), text_fg=(0.5, 0.5, 0.5, 1), text_shadow=(0, 0, 0, 1))
+        self.guiNextButton.setPos(0.498, 0, 0)
+        self.guiNextButton.reparentTo(aspect2d)
+        self.guiNextButton.stash()
+        self.guiLastButton = DirectButton(parent=self, relief=None, image=(guiNextUp,
+         guiNextDown,
+         guiNextUp,
+         guiNextDown), image3_color=Vec4(0.5, 0.5, 0.5, 0.75), image_scale=(-0.3, 0.3, 0.3), image1_scale=(-0.35, 0.35, 0.35), image2_scale=(-0.35, 0.35, 0.35), pos=(0.825, 0, -0.018), command=self.goBackwards, text=('',
+         TTLocalizer.MakeAToonLast,
+         TTLocalizer.MakeAToonLast,
+         ''), text_font=ToontownGlobals.getSuitFont(), text_scale=0.08, text_pos=(0, 0.115), text_fg=(0.5, 0.5, 0.5, 1), text_shadow=(0, 0, 0, 1))
+        self.guiLastButton.setPos(-0.498, 0, 0)
+        self.guiLastButton.reparentTo(aspect2d)
+        self.guiLastButton.stash()
 
-        del gui
-        self.makePanels()
-        self.radarOn = [0,
-         0,
-         0,
-         0]
-        priceScale = 0.1
-        emblemIcon = loader.loadModel('phase_3.5/models/gui/tt_m_gui_gen_emblemIcons')
-        silverModel = emblemIcon.find('**/tt_t_gui_gen_emblemSilver')
-        goldModel = emblemIcon.find('**/tt_t_gui_gen_emblemGold')
-        self.silverLabel = DirectLabel(parent=self, relief=None, pos=(-0.25, 0, -0.69), scale=priceScale, image=silverModel, image_pos=(-0.4, 0, 0.4), text=str(localAvatar.emblems[ToontownGlobals.EmblemTypes.Silver]), text_fg=(0.95, 0.95, 0, 1), text_shadow=(0, 0, 0, 1), text_font=ToontownGlobals.getSignFont(), text_align=TextNode.ALeft)
-        self.goldLabel = DirectLabel(parent=self, relief=None, pos=(0.25, 0, -0.69), scale=priceScale, image=goldModel, image_pos=(-0.4, 0, 0.4), text=str(localAvatar.emblems[ToontownGlobals.EmblemTypes.Gold]), text_fg=(0.95, 0.95, 0, 1), text_shadow=(0, 0, 0, 1), text_font=ToontownGlobals.getSignFont(), text_align=TextNode.ALeft)
-        if not base.cr.wantEmblems:
-            self.silverLabel.hide()
-            self.goldLabel.hide()
-        self.accept(localAvatar.uniqueName('emblemsChange'), self.__emblemChange)
-        self.guiTop.setZ(0.625)
-        return
+        self.guiNextDept = DirectButton(parent=self, relief=None, image=(guiNextUp,
+         guiNextDown,
+         guiNextUp,
+         guiNextDisabled), image_scale=(0.1, 0.1, 0.1), image1_scale=(0.15, 0.15, 0.15), image2_scale=(0.15, 0.15, 0.15), pos=(1.165, 0, -0.018), command=self.nextDept, text=('',
+         TTLocalizer.MakeAToonNext,
+         TTLocalizer.MakeAToonNext,
+         ''), text_font=ToontownGlobals.getSuitFont(), text_scale=TTLocalizer.MATguiNextButton/2, text_pos=(0, 0.08), text_fg=(0.5, 0.5, 0.5, 1), text_shadow=(0, 0, 0, 1))
+        self.guiNextDept.setPos(-0.5, 0, 0.625)
+        self.guiNextDept.reparentTo(aspect2d)
+        self.guiNextDept.stash()
+        self.guiLastDept = DirectButton(parent=self, relief=None, image=(guiNextUp,
+         guiNextDown,
+         guiNextUp,
+         guiNextDown), image3_color=Vec4(0.5, 0.5, 0.5, 0.75), image_scale=(-0.1, 0.1, 0.1), image1_scale=(-0.15, 0.15, 0.15), image2_scale=(-0.15, 0.15, 0.15), pos=(0.825, 0, -0.018), command=self.prevDept, text=('',
+         TTLocalizer.MakeAToonLast,
+         TTLocalizer.MakeAToonLast,
+         ''), text_font=ToontownGlobals.getSuitFont(), text_scale=0.04, text_pos=(0, 0.08), text_fg=(0.5, 0.5, 0.5, 1), text_shadow=(0, 0, 0, 1))
+        self.guiLastDept.setPos(-0.75, 0, 0.625)
+        self.guiLastDept.reparentTo(aspect2d)
+        self.guiLastDept.stash()
 
-    def unload(self):
-        self.ignoreAll()
-        self.title.destroy()
-        self.corpRadarButton.destroy()
-        self.legalRadarButton.destroy()
-        self.moneyRadarButton.destroy()
-        self.salesRadarButton.destroy()
-        for panel in self.panels:
-            panel.destroy()
+        self.iconMdl = loader.loadModel('phase_3/models/gui/cog_icons')
+        self.icons = [self.iconMdl.find('**/CorpIcon'), self.iconMdl.find('**/LegalIcon'), self.iconMdl.find('**/MoneyIcon'), self.iconMdl.find('**/SalesIcon')]
+        for icon in self.icons:
+            icon.reparentTo(aspect2d)
+            icon.setScale(0.1)
+            icon.setPos(-0.625, 0, 0.625)
+            icon.stash()
 
-        del self.panels
-        for shadow in self.shadowModels:
-            shadow.removeNode()
-
-        self.panelModel.removeNode()
-        ShtikerPage.ShtikerPage.unload(self)
-
-    def enter(self):
-        self.updatePage()
-        self.bigPanel = None
-        self.nextPanel = None
-        ShtikerPage.ShtikerPage.enter(self)
-        return
-
-    def exit(self):
-        taskMgr.remove('buildingListResponseTimeout-later')
-        taskMgr.remove('suitListResponseTimeout-later')
-        taskMgr.remove('showCogRadarLater')
-        taskMgr.remove('showBuildingRadarLater')
-        for index in range(0, len(self.radarOn)):
-            if self.radarOn[index]:
-                self.toggleRadar(index)
-                self.radarButtons[index]['state'] = DGG.NORMAL
-
-        ShtikerPage.ShtikerPage.exit(self)
-
-    def __emblemChange(self, newEmblems):
-        self.silverLabel['text'] = str(newEmblems[0])
-        self.goldLabel['text'] = str(newEmblems[1])
-
-    def grow(self, panel, pos):
-        if self.bigPanel:
-            print 'setting next panel - ' + str(panel)
-            self.nextPanel = panel
-            self.nextPanelPos = pos
-            return
-        print 'big panel - ' + str(panel)
-        self.bigPanel = panel
-        panel.reparentTo(self.enlargedPanelNode)
-        panel.setScale(panel.getScale() * SCALE_FACTOR)
-        if panel.summonButton:
-            panel.summonButton.show()
-            panel.summonButton['state'] = DGG.NORMAL
-
-    def shrink(self, panel, pos):
-        print 'trying to shrink - ' + str(panel)
-        if panel != self.bigPanel:
-            self.nextPanel = None
-            return
-        print 'shrink panel - ' + str(panel)
-        self.bigPanel = None
-        panel.setScale(panel.scale)
-        panel.reparentTo(self.panelNode)
-        if panel.summonButton:
-            panel.summonButton.hide()
-            panel.summonButton['state'] = DGG.DISABLED
-        if self.nextPanel:
-            self.grow(self.nextPanel, self.nextPanelPos)
-        return
-
-    def toggleRadar(self, deptNum):
-        messenger.send('wakeup')
-        if self.radarOn[deptNum]:
-            self.radarOn[deptNum] = 0
-        else:
-            self.radarOn[deptNum] = 1
-        deptSize = SuitDNA.suitsPerDept
-        panels = self.panels[deptSize * deptNum:SuitDNA.suitsPerDept * (deptNum + 1)]
-        if self.radarOn[deptNum]:
-            if hasattr(base.cr, 'currSuitPlanner'):
-                if base.cr.currSuitPlanner != None:
-                    base.cr.currSuitPlanner.d_suitListQuery()
-                    self.acceptOnce('suitListResponse', self.updateCogRadar, extraArgs=[deptNum, panels])
-                    taskMgr.doMethodLater(1.0, self.suitListResponseTimeout, 'suitListResponseTimeout-later', extraArgs=(deptNum, panels))
-                    if self.radarButtons[deptNum].building:
-                        base.cr.currSuitPlanner.d_buildingListQuery()
-                        self.acceptOnce('buildingListResponse', self.updateBuildingRadar, extraArgs=[deptNum])
-                        taskMgr.doMethodLater(1.0, self.buildingListResponseTimeout, 'buildingListResponseTimeout-later', extraArgs=(deptNum,))
-                else:
-                    self.updateCogRadar(deptNum, panels)
-                    self.updateBuildingRadar(deptNum)
-            else:
-                self.updateCogRadar(deptNum, panels)
-                self.updateBuildingRadar(deptNum)
-            self.radarButtons[deptNum]['state'] = DGG.DISABLED
-        else:
-            self.updateCogRadar(deptNum, panels)
-            self.updateBuildingRadar(deptNum)
-        return
-
-    def suitListResponseTimeout(self, deptNum, panels):
-        self.updateCogRadar(deptNum, panels, 1)
-
-    def buildingListResponseTimeout(self, deptNum):
-        self.updateBuildingRadar(deptNum, 1)
-
-    def makePanels(self):
-        self.panels = []
-        base.panels = []
-        xStart = -0.66
-        yStart = -0.18
-        xOffset = 0.199
-        yOffset = 0.284
-        for dept in range(0, len(SuitDNA.suitDepts)):
-            row = []
-            color = PANEL_COLORS[dept]
-            for type in range(0, SuitDNA.suitsPerDept):
-                panel = DirectLabel(parent=self.panelNode, pos=(xStart + type * xOffset, 0.0, yStart - dept * yOffset), relief=None, state=DGG.NORMAL, image=self.panelModel, image_scale=(1, 1, 1), image_color=color, text=TTLocalizer.SuitPageMystery, text_scale=0.045, text_fg=(0, 0, 0, 1), text_pos=(0, 0.185, 0), text_font=ToontownGlobals.getSuitFont(), text_wordwrap=7)
-                panel.scale = 0.6
-                panel.setScale(panel.scale)
-                panel.quotaLabel = None
-                panel.head = None
-                panel.shadow = None
-                panel.count = 0
-                panel.summonButton = None
-                self.addCogRadarLabel(panel)
-                self.panels.append(panel)
-                base.panels.append(panel)
-
-        return
-
-    def addQuotaLabel(self, panel):
-        index = self.panels.index(panel)
-        count = str(base.localAvatar.cogCounts[index])
-        if base.localAvatar.cogs[index] < COG_COMPLETE1:
-            quota = str(COG_QUOTAS[0][index % SuitDNA.suitsPerDept])
-        else:
-            quota = str(COG_QUOTAS[1][index % SuitDNA.suitsPerDept])
-        quotaLabel = DirectLabel(parent=panel, pos=(0.0, 0.0, -0.215), relief=None, state=DGG.DISABLED, text=TTLocalizer.SuitPageQuota % (count, quota), text_scale=0.045, text_fg=(0, 0, 0, 1), text_font=ToontownGlobals.getSuitFont())
-        panel.quotaLabel = quotaLabel
-        return
-
-    def addSuitHead(self, panel, suitName):
-        panelIndex = self.panels.index(panel)
-        shadow = panel.attachNewNode('shadow')
-        shadowModel = self.shadowModels[panelIndex]
-        shadowModel.copyTo(shadow)
-        coords = SHADOW_SCALE_POS[panelIndex]
-        shadow.setScale(coords[0])
-        shadow.setPos(coords[1], coords[2], coords[3])
-        panel.shadow = shadow
-        panel.head = Suit.attachSuitHead(panel, suitName)
-
-    def addCogRadarLabel(self, panel):
-        cogRadarLabel = DirectLabel(parent=panel, pos=(0.0, 0.0, -0.215), relief=None, state=DGG.DISABLED, text='', text_scale=0.05, text_fg=(0, 0, 0, 1), text_font=ToontownGlobals.getSuitFont())
-        panel.cogRadarLabel = cogRadarLabel
-        return
-
-    def addSummonButton(self, panel):
         buttons = loader.loadModel('phase_3/models/gui/dialog_box_buttons_gui')
         okButtonList = (buttons.find('**/ChtBx_OKBtn_UP'), buttons.find('**/ChtBx_OKBtn_DN'), buttons.find('**/ChtBx_OKBtn_Rllvr'))
         gui = loader.loadModel('phase_3.5/models/gui/stickerbook_gui')
         iconGeom = gui.find('**/summons')
-        summonButton = DirectButton(parent=panel, pos=(0.1, 0.0, -0.13), scale=0.1, relief=None, state=DGG.NORMAL, image=okButtonList, image_scale=13.0, geom=iconGeom, geom_scale=0.7, text=('',
+        summonButton = DirectButton(parent=self, pos=(0.825, 0.0, -0.018), scale=0.1, relief=None, state=DGG.NORMAL, image=okButtonList, image_scale=13.0, geom=iconGeom, geom_scale=0.7, text=('',
          TTLocalizer.IssueSummons,
          TTLocalizer.IssueSummons,
-         ''), text_scale=0.4, text_pos=(-1.1, -0.4), command=self.summonButtonPressed, extraArgs=[panel])
-        panel.summonButton = summonButton
+         ''), text_font=ToontownGlobals.getSuitFont(), text_scale=0.5, text_fg=(0.5, 0.5, 0.5, 1), text_shadow=(0, 0, 0, 1), text_pos=(0, 0.5), command=self.summonButtonPressed, extraArgs=[])
+        self.summonButton = summonButton
+        self.summonButton.setPos(0.625, 0, 0.5)
+        self.summonButton.stash()
         return
 
-    def summonButtonPressed(self, panel):
-        panelIndex = self.panels.index(panel)
-        self.summonDialog = SummonCogDialog.SummonCogDialog(panelIndex)
+    def generateDeptList(self):
+        return SuitDNA.suitHeadTypes[self.currentDept * SuitDNA.suitsPerDept : self.currentDept * SuitDNA.suitsPerDept + SuitDNA.normalSuits]
+
+    def getNextSuit(self):
+        return min((self.selectedSuit + 1) % SuitDNA.normalSuits, SuitDNA.normalSuits)
+
+    def getPreviousSuit(self):
+        if self.selectedSuit - 1 < 0:
+            return SuitDNA.normalSuits - 1
+        else:
+            return self.selectedSuit - 1
+
+    def unload(self):
+        self.ignoreAll()
+        self.title.destroy()
+        self.suitName.destroy()
+        self.suitInfo.destroy()
+        if self.suitChatBalloon:
+            self.suitChatBalloon.removeNode()
+            del self.suitChatBalloon
+        if self.suitChatNP:
+            self.suitChatNP.removeNode()
+            del self.suitChatNP
+        if hasattr(self, 'suitChat'):
+            del self.suitChat
+        if hasattr(self, 'suitSound'):
+            del self.suitSound
+        if self.summonButton:
+            self.summonButton.destroy()
+        self.iconMdl.removeNode()
+        self.guiNextButton.destroy()
+        self.guiLastButton.destroy()
+        self.guiNextDept.destroy()
+        self.guiLastDept.destroy()
+        del self.guiNextButton
+        del self.guiLastButton
+        del self.guiNextDept
+        del self.guiLastDept
+        del self.icons
+        ShtikerPage.ShtikerPage.unload(self)
+
+    def enter(self):
+        ShtikerPage.ShtikerPage.enter(self)
+        self.currentSuit = self.makeCog(self.selectedSuit)
+        currentKnown = base.localAvatar.cogCounts[self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        self.currentSuit.setColorScale(currentKnown, currentKnown, currentKnown, 1)
+        self.updateInformation()
+        prevSuitIdx = self.getPreviousSuit()
+        self.previousSuit = self.makeCog(prevSuitIdx)
+        self.previousSuit.setX(PREVIOUS_SUIT_POS)
+        prevKnown = base.localAvatar.cogCounts[prevSuitIdx + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        self.previousSuit.setColorScale(prevKnown, prevKnown, prevKnown, 0)
+        nextSuitIdx = self.getNextSuit()
+        self.nextSuit = self.makeCog(nextSuitIdx)
+        self.nextSuit.setX(NEXT_SUIT_POS)
+        nextKnown = base.localAvatar.cogCounts[nextSuitIdx + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        self.nextSuit.setColorScale(nextKnown, nextKnown, nextKnown, 0)
+        self.guiNextButton.unstash()
+        self.guiLastButton.unstash()
+        self.guiNextDept.unstash()
+        self.guiLastDept.unstash()
+        self.icons[self.currentDept].unstash()
+        taskMgr.doMethodLater(1, self.getRadar, 'UpdateTask')
+        self.startAction()
+        if base.localAvatar.hasCogSummons(self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)):
+            self.summonButton.unstash()
+        else:
+            self.summonButton.stash()
+        return
+
+    def exit(self):
+        taskMgr.remove('UpdateTask')
+        taskMgr.remove('ActionTask')
+        self.ignoreAll()
+        if self.moveSeq:
+            self.moveSeq.finish()
+            self.moveSeq = None
+        if self.actSeq:
+            self.actSeq.finish()
+            self.actSeq = None
+        if self.currentSuit:
+            self.currentSuit.cleanup()
+            self.currentSuit.delete()
+            self.currentSuit = None
+        if self.nextSuit:
+            self.nextSuit.cleanup()
+            self.nextSuit.delete()
+            self.nextSuit = None
+        if self.previousSuit:
+            self.previousSuit.cleanup()
+            self.previousSuit.delete()
+            self.previousSuit = None
+        self.guiNextButton.stash()
+        self.guiLastButton.stash()
+        self.guiNextDept.stash()
+        self.guiLastDept.stash()
+        self.icons[self.currentDept].stash()
+        self.summonButton.stash()
+        ShtikerPage.ShtikerPage.exit(self)
+
+    def makeCog(self, idx):
+        idx = max(idx, 0)
+        if idx > len(self.deptList) - 1:
+            idx = 0
+        newSuit = Suit.Suit()
+        newSuit.dna = SuitDNA.SuitDNA()
+        newSuit.dna.newSuit(self.deptList[idx])
+        newSuit.setDNA(newSuit.dna)
+        newSuit.reparentTo(self)
+        newSuit.loop('neutral')
+        newSuit.setScale(0.1)
+        newSuit.setBin('unsorted', 0, 1)
+        newSuit.setDepthTest(True)
+        newSuit.setDepthWrite(True)
+        newSuit.setZ(SUIT_Z)
+        newSuit.setH(180)
+        newSuit.setTransparency(1)
+        return newSuit
+
+    def doAction(self, task):
+        if not self.currentSuit:
+            return Task.done
+        if self.actSeq:
+            self.actSeq.finish()
+        self.setSuitChat(SuitBattleGlobals.getFaceoffTaunt(self.currentSuit.dna.name, 0))
+        anim = random.choice(['victory', 'slip-backward', 'slip-forward', 'reach', 'hypnotized', 'lured', 'neutral', 'neutral'])
+        self.actSeq = Sequence(
+            ActorInterval(self.currentSuit, anim),
+            Func(self.currentSuit.loop, 'neutral'),
+        )
+        self.actSeq.start()
+        task.delayTime = random.randrange(ACT_DELAY_MIN, ACT_DELAY_MAX)
+        return Task.again
+
+    def setSuitChat(self, str, timeout = 10):
+        # Because nametags don't work on aspect2d.
+        self.clearSuitChat()
+        searchString = str.lower()
+        stringLength = len(str)
+        del self.suitSound
+        suitIdx = self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)
+        dialDict = SUIT_DIAL_DICT
+        if searchString.find(OTPLocalizer.DialogSpecial) >= 0:
+            self.suitSound = loader.loadSfx(dialDict.get('murmur'))
+        elif searchString.find(OTPLocalizer.DialogExclamation) >= 0:
+            self.suitSound = loader.loadSfx(dialDict.get('statement'))
+        elif searchString.find(OTPLocalizer.DialogQuestion) >= 0:
+            self.suitSound = loader.loadSfx(dialDict.get('question'))
+        elif stringLength <= OTPLocalizer.DialogLength1:
+            self.suitSound = loader.loadSfx(dialDict.get('grunt'))
+        elif stringLength <= OTPLocalizer.DialogLength2:
+            self.suitSound = loader.loadSfx(dialDict.get('murmur'))
+        else:
+            self.suitSound = loader.loadSfx(dialDict.get('statement'))
+        base.playSfx(self.suitSound)
+        if not self.suitChatBalloon:
+            self.suitChatBalloon = loader.loadModel('phase_3/models/props/chatbox')
+        self.suitChat = ChatBalloon(self.suitChatBalloon)
+        chatNode = self.suitChat.generate(str, ToontownGlobals.getSuitFont())[0]
+        self.suitChatNP = self.currentSuit.attachNewNode(chatNode.node(), 1000)
+        self.suitChatNP.setScale(0.325)
+        self.suitChatNP.setH(180)
+        self.suitChatNP.setPos(0, 0, 0.25 + self.currentSuit.height)
+        if timeout:
+            taskMgr.doMethodLater(timeout, self.clearSuitChat, 'clearSuitChat')
+
+    def clearSuitChat(self, task = None):
+        taskMgr.remove('clearSuitChat')
+        if self.suitChatNP:
+            self.suitChatNP.removeNode()
+            self.suitChatNP = None
+            del self.suitChat
+        return
+
+    def nextDept(self):
+        self.icons[self.currentDept].stash()
+        self.currentDept = (self.currentDept + 1) % 4
+        self.deptList = self.generateDeptList()
+        if self.nextSuit:
+            self.nextSuit.cleanup()
+            self.nextSuit.delete()
+            self.nextSuit = None
+        self.nextSuit = self.makeCog(self.selectedSuit)
+        self.nextSuit.setPos(NEXT_SUIT_POS, 0, SUIT_Z)
+        self.selectedSuit = self.getPreviousSuit() # here's a hack
+        self.goForwards(True)
+        self.icons[self.currentDept].unstash()
+
+    def prevDept(self):
+        self.icons[self.currentDept].stash()
+        self.currentDept -= 1
+        if self.currentDept < 0:
+            self.currentDept = 3
+        self.deptList = self.generateDeptList()
+        if self.previousSuit:
+            self.previousSuit.cleanup()
+            self.previousSuit.delete()
+            self.previousSuit = None
+        self.previousSuit = self.makeCog(self.selectedSuit)
+        self.previousSuit.setPos(PREVIOUS_SUIT_POS, 0, SUIT_Z)
+        self.selectedSuit = self.getNextSuit()
+        self.goBackwards(True)
+        self.icons[self.currentDept].unstash()
+
+    def goForwards(self, newPrev = False):
+        messenger.send('wakeup')
+        if self.moveSeq:
+            self.moveSeq.finish()
+        if self.actSeq:
+            self.actSeq.finish()
+        prevSuitKnown = base.localAvatar.cogCounts[self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        self.selectedSuit = self.getNextSuit()
+        suitKnown = base.localAvatar.cogCounts[self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        nextSuitKnown = base.localAvatar.cogCounts[self.getNextSuit() + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        if self.previousSuit:
+            self.previousSuit.cleanup()
+            self.previousSuit.delete()
+            self.previousSuit = None
+        self.previousSuit = self.currentSuit
+        self.currentSuit = self.nextSuit
+        self.nextSuit = self.makeCog(self.getNextSuit())
+        self.nextSuit.setPos(NEXT_SUIT_POS, 0, SUIT_Z)
+        self.nextSuit.setColorScale(nextSuitKnown, nextSuitKnown, nextSuitKnown, 0)
+        self.stopUpdating()
+        self.updateInformation()
+        taskMgr.doMethodLater(1, self.getRadar, 'UpdateTask')
+        self.moveSeq = Sequence(
+            Parallel(
+                self.previousSuit.posInterval(1, (PREVIOUS_SUIT_POS, 0, SUIT_Z)),
+                self.previousSuit.colorScaleInterval(1, (prevSuitKnown, prevSuitKnown, prevSuitKnown, 0)),
+                self.currentSuit.posInterval(1, (0, 0, SUIT_Z)),
+                self.currentSuit.colorScaleInterval(1, (suitKnown, suitKnown, suitKnown, 1)),
+            ),
+            Func(self.startAction),
+        )
+        if newPrev:
+            self.moveSeq.append(Func(self.newPrev)) # hack
+        self.moveSeq.start()
+        if base.localAvatar.hasCogSummons(self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)):
+            self.summonButton.unstash()
+        else:
+            self.summonButton.stash()
+
+    def goBackwards(self, newNext = False):
+        messenger.send('wakeup')
+        if self.moveSeq:
+            self.moveSeq.finish()
+        if self.actSeq:
+            self.actSeq.finish()
+        nextSuitKnown = base.localAvatar.cogCounts[self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        self.selectedSuit = self.getPreviousSuit()
+        suitKnown = base.localAvatar.cogCounts[self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        prevSuitIdx = self.getPreviousSuit()
+        prevSuitKnown = base.localAvatar.cogCounts[prevSuitIdx + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        if self.nextSuit:
+            self.nextSuit.cleanup()
+            self.nextSuit.delete()
+            self.nextSuit = None
+        self.nextSuit = self.currentSuit
+        self.currentSuit = self.previousSuit
+        self.previousSuit = self.makeCog(self.getPreviousSuit())
+        self.previousSuit.setPos(PREVIOUS_SUIT_POS, 0, SUIT_Z)
+        self.previousSuit.setColorScale(prevSuitKnown, prevSuitKnown, prevSuitKnown, 0)
+        self.stopUpdating()
+        self.updateInformation()
+        taskMgr.doMethodLater(1, self.getRadar, 'UpdateTask')
+        self.moveSeq = Sequence(
+            Parallel(
+                self.nextSuit.posInterval(1, (NEXT_SUIT_POS, 0, SUIT_Z)),
+                self.nextSuit.colorScaleInterval(1, (nextSuitKnown, nextSuitKnown, nextSuitKnown, 0)),
+                self.currentSuit.posInterval(1, (0, 0, SUIT_Z)),
+                self.currentSuit.colorScaleInterval(1, (suitKnown, suitKnown, suitKnown, 1)),
+            ),
+            Func(self.startAction),
+        )
+        if newNext:
+            self.moveSeq.append(Func(self.newNext))
+        self.moveSeq.start()
+        if base.localAvatar.hasCogSummons(self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)):
+            self.summonButton.unstash()
+        else:
+            self.summonButton.stash()
+
+    def newNext(self):
+        if self.nextSuit:
+            self.nextSuit.cleanup()
+            self.nextSuit.delete()
+            self.nextSuit = None
+        self.nextSuit = self.makeCog(self.getNextSuit())
+        self.nextSuit.setPos(NEXT_SUIT_POS, 0, SUIT_Z)
+        nextSuitKnown = base.localAvatar.cogCounts[self.getNextSuit() + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        self.nextSuit.setColorScale(nextSuitKnown, nextSuitKnown, nextSuitKnown, 0)
+
+    def newPrev(self):
+        if self.previousSuit:
+            self.previousSuit.cleanup()
+            self.previousSuit.delete()
+            self.previousSuit = None
+        self.previousSuit = self.makeCog(self.getPreviousSuit())
+        self.previousSuit.setPos(PREVIOUS_SUIT_POS, 0, SUIT_Z)
+        prevSuitIdx = self.getPreviousSuit()
+        prevKnown = base.localAvatar.cogCounts[prevSuitIdx + (self.currentDept * SuitDNA.suitsPerDept)] != 0
+        self.previousSuit.setColorScale(prevKnown, prevKnown, prevKnown, 0)
+
+    def updateInformation(self, cogsFound = -1, bldgsFound = -1):
+        count = base.localAvatar.cogCounts[self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)]
+        try:
+            if count == 0:
+                suitName = TTLocalizer.SuitPageMystery
+                suitNamePlural = TTLocalizer.SuitPageMystery
+            else:
+                suitName = SuitBattleGlobals.SuitAttributes[self.currentSuit.dna.name]['name']
+                suitNamePlural = SuitBattleGlobals.SuitAttributes[self.currentSuit.dna.name]['pluralname']
+            if COG_QUOTAS[0][self.selectedSuit] - count > 0:
+                suitRadar = TTLocalizer.SuitPageDefeatMoreCogs.format(COG_QUOTAS[0][self.selectedSuit] - count, suitNamePlural)
+            elif cogsFound == -1:
+                suitRadar = TTLocalizer.SuitPageLoading
+            else:
+                suitRadar = TTLocalizer.SuitPageCogRadar.format(cogsFound, suitNamePlural)
+
+            if COG_QUOTAS[1][self.selectedSuit] - count > 0:
+                bldgRadar = TTLocalizer.SuitPageDefeatMoreCogs.format(COG_QUOTAS[1][self.selectedSuit] - count, suitNamePlural)
+            elif bldgsFound == -1:
+                bldgRadar = TTLocalizer.SuitPageLoading
+            else:
+                hasRadar = True
+                deptCounts = base.localAvatar.cogCounts[self.currentDept * SuitDNA.suitsPerDept : self.currentDept * SuitDNA.suitsPerDept + SuitDNA.suitsPerDept]
+                for cog in xrange(len(deptCounts)):
+                    if deptCounts[cog] - COG_QUOTAS[1][cog] < 0:
+                        hasRadar = False
+                if hasRadar:
+                    bldgRadar = TTLocalizer.SuitPageBuildingRadar.format(bldgsFound, 's' if bldgsFound != 1 else '')
+                else:
+                    bldgRadar = TTLocalizer.SuitPageDefeatOtherCogs.format(SuitDNA.getDeptFullnameP(SuitDNA.suitDepts[self.currentDept]))
+        except:
+            # hackfix for closing the book
+            return
+
+        self.suitName.setText(suitName)
+        self.suitInfo.setText('{0}\n{1}\n{2}'.format(TTLocalizer.SuitPageQuota % count, suitRadar, bldgRadar))
+
+    def stopUpdating(self):
+        taskMgr.remove('UpdateTask')
+        taskMgr.remove('ActionTask')
+
+    def startAction(self):
+        taskMgr.doMethodLater(random.randrange(ACT_DELAY_MIN, ACT_DELAY_MAX), self.doAction, 'ActionTask')
+
+    def getRadar(self, task):
+        deptSize = SuitDNA.suitsPerDept
+        if hasattr(base.cr, 'currSuitPlanner'):
+            if base.cr.currSuitPlanner != None:
+                base.cr.currSuitPlanner.d_suitListQuery()
+                self.acceptOnce('suitListResponse', self.__handleSuitListResponse, extraArgs=[self.updateCogRadar()])
+                taskMgr.doMethodLater(1.0, self.suitListResponseTimeout, 'suitListResponseTimeout-later', extraArgs=[])
+            else:
+                self.__handleSuitListResponse(self.updateCogRadar())
+        else:
+            self.__handleSuitListResponse(self.updateCogRadar())
+        return Task.again
+
+    def __handleSuitListResponse(self, numberOfCogs):
+        deptSize = SuitDNA.suitsPerDept
+        if hasattr(base.cr, 'currSuitPlanner'):
+            if base.cr.currSuitPlanner != None:
+                base.cr.currSuitPlanner.d_buildingListQuery()
+                self.acceptOnce('buildingListResponse', self.__handleBldgListResponse, extraArgs=[numberOfCogs, self.updateBuildingRadar(self.currentDept)])
+                taskMgr.doMethodLater(1.0, self.buildingListResponseTimeout, 'buildingListResponseTimeout-later', extraArgs=[numberOfCogs])
+            else:
+                self.__handleBldgListResponse(numberOfCogs, self.updateBuildingRadar(self.currentDept))
+        else:
+            self.__handleBldgListResponse(numberOfCogs, self.updateBuildingRadar(self.currentDept))
+
+    def __handleBldgListResponse(self, numberOfCogs, numberOfBldgs):
+        self.updateInformation(numberOfCogs, numberOfBldgs)
+
+    def suitListResponseTimeout(self):
+        self.__handleSuitListResponse(self.updateCogRadar(1))
+
+    def buildingListResponseTimeout(self, numberOfCogs):
+        self.__handleBldgListResponse(numberOfCogs, self.updateBuildingRadar(self.currentDept, 1))
+
+    def summonButtonPressed(self):
+        cogIndex = self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)
+        self.summonDialog = SummonCogDialog.SummonCogDialog(cogIndex)
         self.summonDialog.load()
-        self.accept(self.summonDialog.doneEvent, self.summonDone, extraArgs=[panel])
+        self.accept(self.summonDialog.doneEvent, self.summonDone, extraArgs=[])
         self.summonDialog.enter()
 
-    def summonDone(self, panel):
+    def summonDone(self):
         if self.summonDialog:
             self.summonDialog.unload()
             self.summonDialog = None
-        index = self.panels.index(panel)
+        index = self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept)
         if not base.localAvatar.hasCogSummons(index):
-            panel.summonButton.hide()
+            self.summonButton.stash()
         return
 
-    def addBuildingRadarLabel(self, button):
-        gui = loader.loadModel('phase_3.5/models/gui/suit_detail_panel')
-        zPos = BUILDING_RADAR_POS[self.radarButtons.index(button)]
-        buildingRadarLabel = DirectLabel(parent=button, relief=None, pos=(0.225, 0.0, zPos), state=DGG.DISABLED, image=gui.find('**/avatar_panel'), image_hpr=(0, 0, 90), image_scale=(0.05, 1, 0.1), image_pos=(0, 0, 0.015), text=TTLocalizer.SuitPageBuildingRadarP % '0', text_scale=0.05, text_fg=(1, 0, 0, 1), text_font=ToontownGlobals.getSuitFont())
-        gui.removeNode()
-        button.buildingRadarLabel = buildingRadarLabel
-        return
-
-    def resetPanel(self, dept, type):
-        panel = self.panels[dept * SuitDNA.suitsPerDept + type]
-        panel['text'] = TTLocalizer.SuitPageMystery
-        if panel.cogRadarLabel:
-            panel.cogRadarLabel.hide()
-        if panel.quotaLabel:
-            panel.quotaLabel.hide()
-        if panel.head:
-            panel.head.hide()
-        if panel.shadow:
-            panel.shadow.hide()
-        if panel.summonButton:
-            panel.summonButton.hide()
-        color = PANEL_COLORS[dept]
-        panel['image_color'] = color
-        for button in self.radarButtons:
-            if button.buildingRadarLabel:
-                button.buildingRadarLabel.hide()
-
-    def setPanelStatus(self, panel, status):
-        index = self.panels.index(panel)
-        if status == COG_UNSEEN:
-            panel['text'] = TTLocalizer.SuitPageMystery
-        elif status == COG_BATTLED:
-            suitName = SuitDNA.suitHeadTypes[index]
-            suitFullName = SuitBattleGlobals.SuitAttributes[suitName]['name']
-            panel['text'] = suitFullName
-            if panel.quotaLabel:
-                panel.quotaLabel.show()
-            else:
-                self.addQuotaLabel(panel)
-            if panel.head and panel.shadow:
-                panel.head.show()
-                panel.shadow.show()
-            else:
-                self.addSuitHead(panel, suitName)
-            if base.localAvatar.hasCogSummons(index):
-                if panel.summonButton:
-                    panel.summonButton.show()
-                else:
-                    self.addSummonButton(panel)
-        elif status == COG_DEFEATED:
-            count = str(base.localAvatar.cogCounts[index])
-            if base.localAvatar.cogs[index] < COG_COMPLETE1:
-                quota = str(COG_QUOTAS[0][index % SuitDNA.suitsPerDept])
-            else:
-                quota = str(COG_QUOTAS[1][index % SuitDNA.suitsPerDept])
-            panel.quotaLabel['text'] = TTLocalizer.SuitPageQuota % (count, quota)
-        elif status == COG_COMPLETE1:
-            panel['image_color'] = PANEL_COLORS_COMPLETE1[index / SuitDNA.suitsPerDept]
-        elif status == COG_COMPLETE2:
-            panel['image_color'] = PANEL_COLORS_COMPLETE2[index / SuitDNA.suitsPerDept]
-
-    def updateAllCogs(self, status):
-        for index in range(0, len(base.localAvatar.cogs)):
-            base.localAvatar.cogs[index] = status
-
-        self.updatePage()
-
-    def updatePage(self):
-        index = 0
-        cogs = base.localAvatar.cogs
-        for dept in range(0, len(SuitDNA.suitDepts)):
-            for type in range(0, SuitDNA.suitsPerDept):
-                self.updateCogStatus(dept, type, cogs[index])
-                index += 1
-
-        self.updateCogRadarButtons(base.localAvatar.cogRadar)
-        self.updateBuildingRadarButtons(base.localAvatar.buildingRadar)
-
-    def updateCogStatus(self, dept, type, status):
-        if dept < 0 or dept > len(SuitDNA.suitDepts):
-            print 'ucs: bad cog dept: ', dept
-        elif type < 0 or type > SuitDNA.suitsPerDept:
-            print 'ucs: bad cog type: ', type
-        elif status < COG_UNSEEN or status > COG_COMPLETE2:
-            print 'ucs: bad status: ', status
-        else:
-            self.resetPanel(dept, type)
-            panel = self.panels[dept * SuitDNA.suitsPerDept + type]
-            if status == COG_UNSEEN:
-                self.setPanelStatus(panel, COG_UNSEEN)
-            elif status == COG_BATTLED:
-                self.setPanelStatus(panel, COG_BATTLED)
-            elif status == COG_DEFEATED:
-                self.setPanelStatus(panel, COG_BATTLED)
-                self.setPanelStatus(panel, COG_DEFEATED)
-            elif status == COG_COMPLETE1:
-                self.setPanelStatus(panel, COG_BATTLED)
-                self.setPanelStatus(panel, COG_DEFEATED)
-                self.setPanelStatus(panel, COG_COMPLETE1)
-            elif status == COG_COMPLETE2:
-                self.setPanelStatus(panel, COG_BATTLED)
-                self.setPanelStatus(panel, COG_DEFEATED)
-                self.setPanelStatus(panel, COG_COMPLETE2)
-
-    def updateCogRadarButtons(self, radars):
-        for index in range(0, len(radars)):
-            if radars[index] == 1:
-                self.radarButtons[index]['state'] = DGG.NORMAL
-
-    def updateCogRadar(self, deptNum, panels, timeout = 0):
+    def updateCogRadar(self, timeout = 0):
         taskMgr.remove('suitListResponseTimeout-later')
         if not timeout and hasattr(base.cr, 'currSuitPlanner') and base.cr.currSuitPlanner != None:
             cogList = base.cr.currSuitPlanner.suitList
         else:
             cogList = []
-        for panel in panels:
-            panel.count = 0
-
+        count = 0
         for cog in cogList:
-            self.panels[cog].count += 1
+            if cog == self.selectedSuit + (self.currentDept * SuitDNA.suitsPerDept):
+                count += 1
 
-        for panel in panels:
-            panel.cogRadarLabel['text'] = TTLocalizer.SuitPageCogRadar % panel.count
-            if self.radarOn[deptNum]:
-                panel.quotaLabel.hide()
-
-                def showLabel(label):
-                    label.show()
-
-                taskMgr.doMethodLater(RADAR_DELAY * panels.index(panel), showLabel, 'showCogRadarLater', extraArgs=(panel.cogRadarLabel,))
-
-                def activateButton(s = self, index = deptNum):
-                    self.radarButtons[index]['state'] = DGG.NORMAL
-                    return Task.done
-
-                if not self.radarButtons[deptNum].building:
-                    taskMgr.doMethodLater(RADAR_DELAY * len(panels), activateButton, 'activateButtonLater')
-            else:
-                panel.cogRadarLabel.hide()
-                panel.quotaLabel.show()
-
-        return
-
-    def updateBuildingRadarButtons(self, radars):
-        for index in range(0, len(radars)):
-            if radars[index] == 1:
-                self.radarButtons[index].building = 1
+        return count
 
     def updateBuildingRadar(self, deptNum, timeout = 0):
         taskMgr.remove('buildingListResponseTimeout-later')
@@ -568,22 +563,9 @@ class SuitPage(ShtikerPage.ShtikerPage):
              0,
              0,
              0]
-        button = self.radarButtons[deptNum]
-        if button.building:
-            if not button.buildingRadarLabel:
-                self.addBuildingRadarLabel(button)
-            if self.radarOn[deptNum]:
-                num = buildingList[deptNum]
-                if num == 1:
-                    button.buildingRadarLabel['text'] = TTLocalizer.SuitPageBuildingRadarS % num
-                else:
-                    button.buildingRadarLabel['text'] = TTLocalizer.SuitPageBuildingRadarP % num
+        num = buildingList[deptNum]
+        return num
 
-                def showLabel(button):
-                    button.buildingRadarLabel.show()
-                    button['state'] = DGG.NORMAL
-
-                taskMgr.doMethodLater(RADAR_DELAY * SuitDNA.suitsPerDept, showLabel, 'showBuildingRadarLater', extraArgs=(button,))
-            else:
-                button.buildingRadarLabel.hide()
-        return
+    def updatePage(self):
+        self.deptList = self.generateDeptList()
+        self.updateInformation()
